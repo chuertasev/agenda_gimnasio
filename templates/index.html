@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Agenda Sanctum Box</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color:rgb(48, 49, 49); }
+        .btn-cancelar { background-color: #ffc107; color: black; }
+        .btn-eliminar { background-color: #dc3545; color: white; }
+        .btn-descargar { background-color: #28a745; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-end mb-3">
+            {% if session.get('admin') %}
+            <form action="{{ url_for('logout') }}" method="get">
+                <button class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
+            </form>
+            {% else %}
+            <a href="{{ url_for('login') }}" class="btn btn-warning btn-sm">Admin login</a>
+            {% endif %}
+        </div>
+
+        <h1 class="text-center mb-4 text-white fw-bold">Agenda de Clases - Sanctum Box 🥊</h1>
+
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <!-- Formulario de reserva -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark fw-bold">Reservar clase</div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" name="nombre" class="form-control" placeholder="Nombre" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="date" name="fecha" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="time" name="hora" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">Reservar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Búsqueda de reservas -->
+        <div class="card mb-4">
+            <div class="card-header">Buscar reservas</div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <input type="text" name="nombre_busqueda" class="form-control" placeholder="Buscar por nombre" value="{{ request.args.get('nombre_busqueda', '') }}">
+                        </div>
+                        <div class="col-md-5">
+                            <input type="date" name="fecha_busqueda" class="form-control" value="{{ request.args.get('fecha_busqueda', '') }}">
+                        </div>
+                        <div class="col-md-2 d-grid gap-2 d-md-block">
+                            <button type="submit" class="btn btn-secondary">Buscar</button>
+                            <a href="{{ url_for('reservas') }}" class="btn btn-outline-secondary">Limpiar</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Listado de reservas -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center bg-warning text-dark fw-bold">
+                <span>Reservas registradas</span>
+                {% if session.get('admin') %}
+                    <a href="{{ url_for('descargar') }}" class="btn btn-descargar btn-sm">📥 Exportar CSV</a>
+                {% endif %}
+            </div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Fecha</th>
+                            <th>Hora</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reservas %}
+                        <tr>
+                            <td>{{ r[1] }}</td>
+                            <td>{{ r[2] }}</td>
+                            <td>{{ r[3] }}</td>
+                            {% set fecha_hora = r[2] + ' ' + r[3] %}
+                            <td>
+                                {% if fecha_hora >= ahora.strftime('%Y-%m-%d %H:%M') %}
+                                    <a href="{{ url_for('cancelar', id=r[0]) }}" class="btn btn-cancelar btn-sm" onclick="return confirm('¿Deseas cancelar esta clase?')">Cancelar</a>
+                                    {% if session.get('admin') %}
+                                    <a href="{{ url_for('eliminar', id=r[0]) }}" class="btn btn-eliminar btn-sm ms-1" onclick="return confirm('¿Eliminar esta clase?')">Eliminar</a>
+                                    {% endif %}
+                                {% elif session.get('admin') %}
+                                    <a href="{{ url_for('eliminar', id=r[0]) }}" class="btn btn-eliminar btn-sm" onclick="return confirm('¿Eliminar esta clase pasada?')">Eliminar</a>
+                                {% else %}
+                                    <span class="text-muted">No disponible</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
